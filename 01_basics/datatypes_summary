@@ -1,0 +1,30 @@
+// Primitive
+
+// 7 Types :
+// String
+// Number
+// Boolean
+// null
+// undefined
+// Symbol
+// BigInt
+
+// Reference (Non Primitive)
+
+// Arrays
+
+const heros = ["Shaktiman", "Naagraj", "Doga"]
+
+// Objects
+
+let myObj = {
+    name : "Ojas",
+    age : 22,
+}
+
+// Functions
+
+const myFunction = function(){
+    console.log("Hello world");
+    
+}
