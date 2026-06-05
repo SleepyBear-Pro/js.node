@@ -1,4 +1,4 @@
-// for of
+// for of Loop
 
 const arr = [1,2,3,4]
 
