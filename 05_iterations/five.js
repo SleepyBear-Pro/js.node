@@ -1,23 +1,23 @@
 const coding = ["js", "rubby", "java", "python", "cpp"]
 
-// coding.forEach( function (val) {
-//     console.log(val);
-// })
+coding.forEach( function (val) {
+    console.log(val);
+})
 
-// coding.forEach( (item) => {
-//     console.log(item);
+coding.forEach( (item) => {
+    console.log(item);
     
-// })
+})
 
-// function printme(item) {
-//     console.log(item);
-// }
+function printme(item) {
+    console.log(item);
+}
 
-// coding.forEach(printme)
+coding.forEach(printme)
 
-// coding.forEach( (item,index,array) => {
-//     console.log(item, index, array);  
-// })
+coding.forEach( (item,index,array) => {
+    console.log(item, index, array);  
+})
 
 const myCoding = [ 
     {
