@@ -21,9 +21,9 @@ console.log(Array.isArray("Sleepy"))
 console.log(Array.from("Sleepy"));
 console.log(Array.from({ name: "Sleepy"}));  // Interesting
 
-let score1 = 100
-let score2 = 200
-let score3 = 300
+let score1 = 10
+let score2 = 20
+let score3 = 40
 
 console.log(Array.of(score1, score2, score3));
 
