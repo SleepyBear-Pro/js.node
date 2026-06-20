@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Air Hockey</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #111;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #scoreboard {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 50px;
+        }
+
+        .player-score { color: #00d4ff; }
+        .cpu-score { color: #ff2d55; }
+
+        canvas {
+            background-color: #f0f0f0;
+            border: 8px solid #333;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            cursor: none; /* Hides the mouse pointer over the table */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="scoreboard">
+        <div class="player-score">YOU: <span id="score-p">0</span></div>
+        <div class="cpu-score">CPU: <span id="score-c">0</span></div>
+    </div>
+
+    <!-- The Game Table -->
+    <canvas id="gameCanvas" width="800" height="450"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scorePElem = document.getElementById('score-p');
+        const scoreCElem = document.getElementById('score-c');
+
+        let scorePlayer = 0;
+        let scoreCPU = 0;
+
+        // Game Objects
+        const puck = { x: canvas.width / 2, y: canvas.height / 2, radius: 15, dx: 0, dy: 0, color: '#222' };
+        const player = { x: 100, y: canvas.height / 2, radius: 35, color: '#00d4ff' };
+        const cpu = { x: canvas.width - 100, y: canvas.height / 2, radius: 35, color: '#ff2d55', speed: 3.5 };
+
+        let mouseX = player.x;
+        let mouseY = player.y;
+
+        // Track Mouse Movement
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+
+        // Helper to draw circles
+        function drawCircle(x, y, radius, color) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        // Reset Puck to center
+        function resetPuck(direction) {
+            puck.x = canvas.width / 2;
+            puck.y = canvas.height / 2;
+            puck.dx = 0;
+            puck.dy = 0;
+            
+            // Launch after a small delay
+            setTimeout(() => {
+                puck.dx = direction * 6; // Speed
+                puck.dy = (Math.random() - 0.5) * 6; // Random angle
+            }, 800);
+        }
+
+        // Math for bouncing objects off each other
+        function handleCollision(paddle) {
+            let dx = puck.x - paddle.x;
+            let dy = puck.y - paddle.y;
+            let distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < puck.radius + paddle.radius) {
+                // Determine bounce angle
+                let angle = Math.atan2(dy, dx);
+                let hitSpeed = 10; 
+
+                puck.dx = Math.cos(angle) * hitSpeed;
+                puck.dy = Math.sin(angle) * hitSpeed;
+
+                // Push puck out to prevent it getting stuck inside the paddle
+                puck.x = paddle.x + Math.cos(angle) * (puck.radius + paddle.radius + 1);
+                puck.y = paddle.y + Math.sin(angle) * (puck.radius + paddle.radius + 1);
+            }
+        }
+
+        function update() {
+            // 1. Move Player (Bind to the left side of the table)
+            player.x = Math.max(player.radius, Math.min(canvas.width / 2 - player.radius, mouseX));
+            player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, mouseY));
+
+            // 2. Move CPU (Basic AI that follows the puck's Y position, bound to right side)
+            if (cpu.y < puck.y - 15) cpu.y += cpu.speed;
+            else if (cpu.y > puck.y + 15) cpu.y -= cpu.speed;
+            
+            cpu.x = canvas.width - 100; // Keep CPU fixed horizontally for simplicity
+            cpu.y = Math.max(cpu.radius, Math.min(canvas.height - cpu.radius, cpu.y));
+
+            // 3. Move Puck
+            puck.x += puck.dx;
+            puck.y += puck.dy;
+
+            // Add friction so the puck slows down slightly over time
+            puck.dx *= 0.99;
+            puck.dy *= 0.99;
+
+            // 4. Wall Bounces (Top and Bottom)
+            if (puck.y - puck.radius < 0 || puck.y + puck.radius > canvas.height) {
+                puck.dy *= -1;
+            }
+
+            // 5. Goals & Side Walls (Left and Right)
+            const goalTop = canvas.height / 3;
+            const goalBottom = canvas.height * (2/3);
+
+            // Left Wall (CPU scores)
+            if (puck.x - puck.radius < 0) {
+                if (puck.y > goalTop && puck.y < goalBottom) {
+                    scoreCPU++;
+                    scoreCElem.innerText = scoreCPU;
+                    resetPuck(1); // Serve to Player
+                } else {
+                    puck.dx *= -1; // Bounce off wall
+                    puck.x = puck.radius;
+                }
+            }
+
+            // Right Wall (Player scores)
+            if (puck.x + puck.radius > canvas.width) {
+                if (puck.y > goalTop && puck.y < goalBottom) {
+                    scorePlayer++;
+                    scorePElem.innerText = scorePlayer;
+                    resetPuck(-1); // Serve to CPU
+                } else {
+                    puck.dx *= -1; // Bounce off wall
+                    puck.x = canvas.width - puck.radius;
+                }
+            }
+
+            // 6. Paddle Collisions
+            handleCollision(player);
+            handleCollision(cpu);
+        }
+
+        function draw() {
+            // Clear the board
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Table Markings
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 4;
+            
+            // Center line
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+
+            // Center circle
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, canvas.height / 2, 60, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Draw Goals
+            ctx.fillStyle = '#ff2d55'; // CPU Goal (Left)
+            ctx.fillRect(0, canvas.height / 3, 15, canvas.height / 3);
+            
+            ctx.fillStyle = '#00d4ff'; // Player Goal (Right)
+            ctx.fillRect(canvas.width - 15, canvas.height / 3, 15, canvas.height / 3);
+
+            // Draw Paddles and Puck
+            drawCircle(player.x, player.y, player.radius, player.color);
+            drawCircle(cpu.x, cpu.y, cpu.radius, cpu.color);
+            drawCircle(puck.x, puck.y, puck.radius, puck.color);
+        }
+
+        // The Main Game Loop
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop); // Runs at 60 Frames Per Second
+        }
+
+        // Start the game
+        resetPuck(1);
+        gameLoop();
+    </script>
+</body>
+</html>
